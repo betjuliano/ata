@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  ata-frontend-dev:
+    image: node:18-alpine
+    working_dir: /app
+    command: sh -lc "npm i -g pnpm && pnpm install && pnpm run dev -- --host --port 3000"
+    environment:
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      # HMR behind Traefik/HTTPS
+      - HMR_HOST=${DOMAIN}
+      - HMR_PROTOCOL=wss
+      - HMR_CLIENT_PORT=443
+    volumes:
+      - type: bind
+        source: ${FRONTEND_PATH}
+        target: /app
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=iaprojetos"
+
+        # HTTP -> HTTPS redirect
+        - "traefik.http.routers.ata-audio-dev-http.rule=Host(`${DOMAIN}`)"
+        - "traefik.http.routers.ata-audio-dev-http.entrypoints=web"
+        - "traefik.http.routers.ata-audio-dev-http.middlewares=redirect-to-https"
+
+        # Middleware definition (shared)
+        - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+        - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+        # HTTPS router
+        - "traefik.http.routers.ata-audio-dev.rule=Host(`${DOMAIN}`)"
+        - "traefik.http.routers.ata-audio-dev.entrypoints=websecure"
+        - "traefik.http.routers.ata-audio-dev.tls=true"
+        - "traefik.http.routers.ata-audio-dev.tls.certresolver=letsencryptresolver"
+
+        # Secure headers middleware
+        - "traefik.http.middlewares.ata-audio-dev-secure.headers.customRequestHeaders.X-Forwarded-Proto=https"
+        - "traefik.http.middlewares.ata-audio-dev-secure.headers.sslRedirect=true"
+        - "traefik.http.middlewares.ata-audio-dev-secure.headers.stsSeconds=31536000"
+        - "traefik.http.middlewares.ata-audio-dev-secure.headers.contentTypeNosniff=true"
+        - "traefik.http.middlewares.ata-audio-dev-secure.headers.browserXssFilter=true"
+        - "traefik.http.middlewares.ata-audio-dev-secure.headers.referrerPolicy=strict-origin-when-cross-origin"
+        - "traefik.http.routers.ata-audio-dev.middlewares=ata-audio-dev-secure"
+
+        # Internal service port
+        - "traefik.http.services.ata-audio-dev.loadbalancer.server.port=3000"
+    networks:
+      - iaprojetos
+
+networks:
+  iaprojetos:
+    external: true
+

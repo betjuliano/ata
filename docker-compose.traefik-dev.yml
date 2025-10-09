@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    environment:
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    # Run Vite dev server bound to all interfaces on port 3000
+    command: pnpm run dev -- --host --port 3000
+    labels:
+      - traefik.enable=true
+      # Replace DOMAIN in .env with your real subdomain (e.g., app.example.com)
+      - traefik.http.routers.ata-frontend-dev.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.ata-frontend-dev.entrypoints=websecure
+      # Set TRAEFIK_CERTRESOLVER in .env (e.g., letsencrypt)
+      - traefik.http.routers.ata-frontend-dev.tls.certresolver=${TRAEFIK_CERTRESOLVER}
+      - traefik.http.services.ata-frontend-dev.loadbalancer.server.port=3000
+    networks:
+      - ata-network
+      - traefik
+
+networks:
+  ata-network:
+    driver: bridge
+  traefik:
+    external: true
+

@@ -1,0 +1,108 @@
+// Prisma Schema - Suporta MySQL e PostgreSQL
+// Para usar MySQL: DATABASE_URL="mysql://..."
+// Para usar PostgreSQL: DATABASE_URL="postgresql://..."
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["ata_audio"]
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  senha      String
+  nomeCompleto String? @map("nome_completo")
+  cargo      String?
+  colegiado  String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  
+  atas       Ata[]
+  integrantes Integrante[]
+  pautas     Pauta[]
+  convocacoes Convocacao[]
+
+  @@map("users")
+  @@schema("ata_audio")
+}
+
+model Ata {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  numeroSessao    String   @map("numero_sessao")
+  tipoSessao      String   @map("tipo_sessao")
+  dataReuniao     String?  @map("data_reuniao")
+  horarioReuniao  String?  @map("horario_reuniao")
+  modoCriacao     String   @map("modo_criacao") // AUDIO, TRANSCRICAO, MANUAL
+  pautaId         Int?     @map("pauta_id")
+  pautaTexto      String?  @map("pauta_texto") @db.Text
+  pautaPath       String?  @map("pauta_path")
+  audioPath       String?  @map("audio_path")
+  transcricaoTexto String? @map("transcricao_texto") @db.Text
+  integrantes     Json?    // Array de integrantes
+  pautasRedacao   Json?    @map("pautas_redacao") // Array de pautas redigidas
+  rascunhoGerado  String?  @map("rascunho_gerado") @db.Text
+  status          String   @default("PENDENTE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pauta           Pauta?   @relation(fields: [pautaId], references: [id], onDelete: SetNull)
+
+  @@map("atas")
+  @@schema("ata_audio")
+}
+
+model Integrante {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  nome      String
+  email     String
+  origem    String?  // Função ou departamento
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("integrantes")
+  @@schema("ata_audio")
+}
+
+model Pauta {
+  id               Int      @id @default(autoincrement())
+  userId           Int      @map("user_id")
+  tema             String
+  descricao        String   @db.Text
+  reuniaoPrevista  String   @map("reuniao_prevista")
+  status           String   @default("PENDENTE") // PENDENTE, DISCUTIDA, APROVADA
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  atas             Ata[]
+
+  @@map("pautas")
+  @@schema("ata_audio")
+}
+
+model Convocacao {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @map("user_id")
+  titulo            String
+  formato           String?
+  dataReuniao       String   @map("data_reuniao")
+  horario           String
+  local             String?
+  pautaTexto        String   @map("pauta_texto") @db.Text
+  textoGerado       String   @map("texto_gerado") @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("convocacoes")
+  @@schema("ata_audio")
+}
+

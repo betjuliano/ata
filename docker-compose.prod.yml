@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: sistema-ata-audio
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      # SSL certificates (se necessário)
+      # - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - ata-network
+    labels:
+      - "com.sistema-ata-audio.description=Sistema Ata Audio Frontend"
+
+networks:
+  ata-network:
+    driver: bridge
+
+# Para adicionar volume de dados (se necessário no futuro)
+# volumes:
+#   ata-data:
+

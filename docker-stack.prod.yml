@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  ata-frontend:
+    image: ${PROD_IMAGE} # e.g., ghcr.io/yourorg/ata-audio-frontend:prod
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=iaprojetos"
+
+        # HTTP -> HTTPS redirect
+        - "traefik.http.routers.ata-audio-http.rule=Host(`${DOMAIN}`)"
+        - "traefik.http.routers.ata-audio-http.entrypoints=web"
+        - "traefik.http.routers.ata-audio-http.middlewares=redirect-to-https"
+
+        # Middleware definition (shared)
+        - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+        - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+        # HTTPS router
+        - "traefik.http.routers.ata-audio.rule=Host(`${DOMAIN}`)"
+        - "traefik.http.routers.ata-audio.entrypoints=websecure"
+        - "traefik.http.routers.ata-audio.tls=true"
+        - "traefik.http.routers.ata-audio.tls.certresolver=letsencryptresolver"
+
+        # Secure headers middleware
+        - "traefik.http.middlewares.ata-audio-secure.headers.customRequestHeaders.X-Forwarded-Proto=https"
+        - "traefik.http.middlewares.ata-audio-secure.headers.sslRedirect=true"
+        - "traefik.http.middlewares.ata-audio-secure.headers.stsSeconds=31536000"
+        - "traefik.http.middlewares.ata-audio-secure.headers.contentTypeNosniff=true"
+        - "traefik.http.middlewares.ata-audio-secure.headers.browserXssFilter=true"
+        - "traefik.http.middlewares.ata-audio-secure.headers.referrerPolicy=strict-origin-when-cross-origin"
+        - "traefik.http.routers.ata-audio.middlewares=ata-audio-secure"
+
+        # Internal service port (Nginx in production image)
+        - "traefik.http.services.ata-audio.loadbalancer.server.port=80"
+    networks:
+      - iaprojetos
+
+networks:
+  iaprojetos:
+    external: true
+
