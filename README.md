@@ -20,9 +20,9 @@ O Sistema Ata Audio é uma aplicação web moderna que automatiza a criação de
 
 **Frontend Moderno**: Desenvolvido em React com Vite, utilizando Tailwind CSS para estilização e componentes shadcn/ui para uma interface profissional e responsiva.
 
-**Backend Serverless**: Implementado com Supabase, oferecendo autenticação segura, banco de dados PostgreSQL, armazenamento de arquivos e Edge Functions para processamento assíncrono.
+**Backend Node + Postgres**: API em Node/Express com Prisma ORM conectando em PostgreSQL. Autenticação via JWT, upload de arquivos e CRUD completos.
 
-**Integração com IA**: Conecta-se com APIs da OpenAI para transcrição (Whisper) e geração de texto (GPT-4), com sistema de fallback para garantir disponibilidade contínua.
+**Integração com IA**: Conecta-se com APIs de transcrição e LLM (ex.: OpenAI Whisper/GPT) com fallback para garantir disponibilidade.
 
 ## Estrutura do Projeto
 
@@ -36,9 +36,9 @@ sistema-ata-audio/
 │   │   └── assets/         # Recursos estáticos
 │   ├── public/             # Arquivos públicos
 │   └── package.json        # Dependências do frontend
-├── supabase/               # Configurações do backend
-│   ├── functions/          # Edge Functions
-│   └── migrations/         # Scripts de banco de dados
+├── backend/                # API Express + Prisma (PostgreSQL)
+│   ├── prisma/             # Schema Prisma
+│   └── server.js           # Servidor Express
 ├── docker-compose.yml      # Orquestração de containers
 └── README.md              # Documentação
 ```
@@ -71,38 +71,25 @@ cp .env.example .env
 pnpm install
 ```
 
-**3. Configuração do Supabase**
-
-Crie um novo projeto no Supabase e configure as seguintes variáveis de ambiente:
-
-```env
-VITE_SUPABASE_URL=https://seu-projeto.supabase.co
-VITE_SUPABASE_ANON_KEY=sua-chave-anonima
-SUPABASE_SERVICE_ROLE_KEY=sua-chave-de-servico
-OPENAI_API_KEY=sua-chave-openai
-```
-
-**4. Configuração do Banco de Dados**
-
-Execute o script SQL de migração no editor SQL do Supabase:
+**3. Configuração do Backend (Node + PostgreSQL)**
 
 ```bash
-# O arquivo está em: supabase/migrations/001_initial_schema.sql
-```
+# Backend
+cd backend
+npm install
 
-**5. Deploy das Edge Functions**
+# Copie variáveis de ambiente
+cp ../.env.example .env
+# Edite .env com DATABASE_URL (Postgres), JWT_SECRET, PORT e CORS_ORIGIN
 
-```bash
-# Instale a CLI do Supabase
-npm install -g supabase
+# Prisma
+npm run prisma:generate
+npm run prisma:migrate
 
-# Faça login e vincule o projeto
-supabase login
-supabase link --project-ref SEU_ID_PROJETO
-
-# Deploy das funções
-supabase functions deploy processar-ata
-supabase functions deploy processar-ata-real
+# Rodar o servidor
+npm run dev   # desenvolvimento
+# ou
+npm start     # produção
 ```
 
 ### Execução em Desenvolvimento
@@ -110,6 +97,7 @@ supabase functions deploy processar-ata-real
 **Modo Desenvolvimento Local**
 ```bash
 cd frontend
+# Configure o .env do frontend com VITE_API_URL=http://localhost:3001/api
 pnpm run dev --host
 ```
 
@@ -173,17 +161,12 @@ docker-compose up -d
 
 ### Opções de Implantação
 
-**1. Supabase + Vercel (Recomendado)**
-- Frontend hospedado na Vercel
-- Backend e banco de dados no Supabase
-- Edge Functions para processamento
-
-**2. Docker + VPS**
+**1. Docker + VPS (Recomendado)**
 - Containerização completa com Docker Compose
 - Adequado para ambientes corporativos
 - Controle total sobre infraestrutura
 
-**3. Kubernetes**
+**2. Kubernetes**
 - Para ambientes de alta disponibilidade
 - Escalabilidade automática
 - Monitoramento avançado

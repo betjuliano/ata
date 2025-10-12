@@ -5,7 +5,6 @@ import Login from './components/Login'
 import Dashboard from './components/Dashboard'
 import EditorAtaEstruturado from './components/EditorAtaEstruturado'
 import Pautas from './components/Pautas'
-import TestLogin from './TestLogin'
 import { Toaster } from 'sonner'
 import './App.css'
 
@@ -44,7 +43,6 @@ function AppContent() {
     <Router>
       <Toaster position="top-right" richColors />
       <Routes>
-        <Route path="/test" element={<TestLogin />} />
         <Route 
           path="/login" 
           element={
