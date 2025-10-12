@@ -72,8 +72,14 @@ exit
 
 ### 5. Rodar migrações
 ```bash
+# Gerar cliente Prisma
 npm run prisma:generate
+
+# Em desenvolvimento (cria novas migrações e aplica)
 npm run prisma:migrate
+
+# Em produção (aplica migrações já geradas)
+npx prisma migrate deploy
 ```
 
 ### 6. Iniciar servidor
