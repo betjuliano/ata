@@ -1,0 +1,7 @@
+python-telegram-bot
+google-search-results
+beautifulsoup4
+httpx
+pydantic
+requests
+fake-useragent
